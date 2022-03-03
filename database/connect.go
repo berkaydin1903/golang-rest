@@ -2,24 +2,19 @@ package database
 
 import (
 	"deneme/models"
-	"fmt"
-	"os"
 
-	_ "github.com/GoogleCloudPlatform/cloudsql-proxy/proxy/dialers/mysql"
-	"gorm.io/driver/mysql"
+	_ "github.com/GoogleCloudPlatform/cloudsql-proxy/proxy/dialers/postgres"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
 
 func Connect() {
-	url := os.Getenv("DB_URL")
-	db := os.Getenv("DB_DATABASE")
-	username := os.Getenv("DB_USERNAME")
-	password := os.Getenv("DB_PASSWORD")
-	dsn := fmt.Sprintf("%s:%s@%s/%s", username, password, url, db)
 
-	database, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	database, err := gorm.Open(postgres.New(postgres.Config{
+		DSN: "host=104.198.158.95 user=postgres dbname=gorm password=1q2w3e4r5t sslmode=disable",
+	}))
 
 	if err != nil {
 		panic("cloud not")
