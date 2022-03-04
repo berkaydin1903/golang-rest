@@ -3,6 +3,7 @@ package database
 import (
 	"main/models"
 
+	_ "github.com/GoogleCloudPlatform/cloudsql-proxy/proxy/dialers/postgres"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -11,11 +12,13 @@ var DB *gorm.DB
 
 func Connect() {
 
-	dsn := "host=localhost user=postgres password=1q2w3e4r5t dbname=postgres port=5432 sslmode=disable TimeZone=Asia/Shanghai"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	database, err := gorm.Open(postgres.New(postgres.Config{
+		DSN: "host=104.198.158.95 user=postgres dbname=gorm password=1q2w3e4r5t sslmode=disable",
+	}))
+
 	if err != nil {
-		panic("Could not connect to the database")
+		panic("cloud not")
 	}
-	DB = db
-	db.AutoMigrate(&models.User{}, &models.UserContact{})
+	DB = database
+	database.AutoMigrate(&models.User{}, &models.UserContact{})
 }
