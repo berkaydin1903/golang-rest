@@ -10,13 +10,12 @@ import (
 
 func GetUserContactById(c *fiber.Ctx) error {
 
-	id, _ := strconv.Atoi(c.Params("id"))
+	// id, _ := strconv.Atoi(c.Params("id"))
 
-	User := models.User{
-		Id: uint(id),
-	}
-	database.DB.Preload("UserContacts").Find(&User)
-	return c.JSON(&User)
+	UserContacts := []models.UserContact{}
+	database.DB.Find(&UserContacts)
+
+	return c.JSON(&UserContacts)
 
 }
 func AddUserContact(c *fiber.Ctx) error {
@@ -26,7 +25,9 @@ func AddUserContact(c *fiber.Ctx) error {
 		return err
 	}
 	database.DB.Create(&usercontact)
-	return c.JSON(&usercontact)
+	return c.JSON(fiber.Map{
+		"status": true,
+	})
 }
 func GetUserContact(c *fiber.Ctx) error {
 	id, _ := strconv.Atoi(c.Params("id"))

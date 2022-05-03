@@ -7,6 +7,7 @@ type User struct {
 	FirstName    string        `json:"first_name"`
 	LastName     string        `json:"last_name"`
 	Email        string        `json:"email" gorm:"unique"`
+	Token        string        `json:"token"`
 	Password     []byte        `json:"-"`
 	UserContacts []UserContact `json:"user_contact" gorm:"foreignKey:UserId"`
 }

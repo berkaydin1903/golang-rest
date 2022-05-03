@@ -1,16 +1,23 @@
 package middleware
 
 import (
+	"main/database"
+	"main/models"
 	"main/util"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 func IsAuthenticated(c *fiber.Ctx) error {
-	cookie := c.Cookies("jwt")
+	Authorization := c.Get("Authorization")
 
-	if _, err := util.ParseJwt(cookie); err != nil {
-		c.Status(fiber.StatusUnauthorized)
+	id, _ := util.ParseJwt(Authorization)
+
+	var user models.User
+
+	database.DB.Where("id=? AND token=?", id, Authorization).First(&user)
+
+	if user.Token == "" {
 		return c.JSON(fiber.Map{
 			"message": "unauthenticated",
 		})

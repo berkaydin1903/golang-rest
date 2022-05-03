@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"main/util"
-	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gofiber/fiber/v2"
@@ -65,15 +64,22 @@ func Login(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 
-	cookie := fiber.Cookie{
-		Name:     "jwt",
-		Value:    token,
-		Expires:  time.Now().Add(time.Hour * 24),
-		HTTPOnly: true,
+	Usertoken := models.User{
+		Id:    uint(user.Id),
+		Token: token,
 	}
-	c.Cookie(&cookie)
+
+	if err := c.BodyParser(&Usertoken); err != nil {
+		return err
+	}
+
+	database.DB.Model(&Usertoken).Updates(Usertoken)
+
 	return c.JSON(fiber.Map{
+		"status":  true,
 		"message": "success",
+		"token":   token,
+		"id":      user.Id,
 	})
 }
 
@@ -82,24 +88,24 @@ type Claims struct {
 }
 
 func User(c *fiber.Ctx) error {
-	cookie := c.Cookies("jwt")
 
-	id, _ := util.ParseJwt(cookie)
+	Authorization := c.Get("Authorization")
+
+	id, _ := util.ParseJwt(Authorization)
 
 	var user models.User
 
 	database.DB.Where("id=?", id).First(&user)
+
 	return c.JSON(user)
 }
 func Logout(c *fiber.Ctx) error {
-	cookie := fiber.Cookie{
-		Name:     "jwt",
-		Value:    "",
-		Expires:  time.Now().Add(-time.Hour),
-		HTTPOnly: true,
-	}
 
-	c.Cookie(&cookie)
+	Authorization := c.Get("Authorization")
+
+	id, _ := util.ParseJwt(Authorization)
+
+	database.DB.Model(&models.User{}).Where("id=? AND token=?", id, Authorization).Update("token", nil)
 
 	return c.JSON(fiber.Map{
 		"message": "success",
