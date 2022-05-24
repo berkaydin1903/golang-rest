@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"main/database"
+	"main/dto"
 	"main/models"
 	"strconv"
 
@@ -13,6 +14,21 @@ import (
 
 func Register(c *fiber.Ctx) error {
 	var data map[string]string
+	var UserRegisterDto dto.UserRegisterDto
+
+	if err := c.BodyParser(&UserRegisterDto); err != nil {
+		return err
+	}
+
+	if error := validate.Struct(&UserRegisterDto); error != nil {
+		print(error)
+		resp := util.ToErrResponse(error)
+		return c.JSON(fiber.Map{
+			"status":  false,
+			"message": resp.Errors,
+		})
+
+	}
 
 	if err := c.BodyParser(&data); err != nil {
 		return err
@@ -21,19 +37,38 @@ func Register(c *fiber.Ctx) error {
 	if data["password"] != data["password_confirm"] {
 		c.Status(400)
 		return c.JSON(fiber.Map{
-			"message": "passwords do not match",
+			"status":  false,
+			"message": "GIRILEN SIFRELER ES DEGIL",
 		})
 	}
 	user := models.User{
-		FirstName:    data["first_name"],
-		LastName:     data["last_name"],
+		UserName:     data["username"],
 		Email:        data["email"],
 		UserContacts: []models.UserContact{},
 	}
 	user.SetPassword(data["password"])
 	database.DB.Create(&user)
 
-	return c.JSON(user)
+	token, err := util.GenerateJwt(strconv.Itoa(int(user.Id)), user.Id)
+	if err != nil {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+
+	Usertoken := models.User{
+		Id:       uint(user.Id),
+		UserName: user.UserName,
+		Token:    token,
+	}
+
+	if err := c.BodyParser(&Usertoken); err != nil {
+		return err
+	}
+
+	database.DB.Model(&Usertoken).Updates(Usertoken)
+	return c.JSON(fiber.Map{
+		"status": true,
+		"data":   Usertoken,
+	})
 }
 
 func Login(c *fiber.Ctx) error {
@@ -49,24 +84,27 @@ func Login(c *fiber.Ctx) error {
 	if user.Id == 0 {
 		c.Status(404)
 		return c.JSON(fiber.Map{
-			"message": "not found",
+			"status":  false,
+			"message": "KULLANICI BULUNAMADI",
 		})
 
 	}
 	if err := user.ComparePassword(data["password"]); err != nil {
 		c.Status(400)
 		return c.JSON(fiber.Map{
-			"message": "incorrect password",
+			"status":  false,
+			"message": "HATALI SIFRE",
 		})
 	}
-	token, err := util.GenerateJwt(strconv.Itoa(int(user.Id)))
+	token, err := util.GenerateJwt(strconv.Itoa(int(user.Id)), user.Id)
 	if err != nil {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 
 	Usertoken := models.User{
-		Id:    uint(user.Id),
-		Token: token,
+		Id:       uint(user.Id),
+		UserName: user.UserName,
+		Token:    token,
 	}
 
 	if err := c.BodyParser(&Usertoken); err != nil {
@@ -74,12 +112,9 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	database.DB.Model(&Usertoken).Updates(Usertoken)
-
 	return c.JSON(fiber.Map{
-		"status":  true,
-		"message": "success",
-		"token":   token,
-		"id":      user.Id,
+		"status": true,
+		"data":   Usertoken,
 	})
 }
 
@@ -91,23 +126,41 @@ func User(c *fiber.Ctx) error {
 
 	Authorization := c.Get("Authorization")
 
-	id, _ := util.ParseJwt(Authorization)
+	id, err := util.ParseJwt(Authorization)
+
+	if err != nil {
+
+		return c.JSON(fiber.Map{
+			"status":  false,
+			"message": "token doğrulanmadı",
+		})
+	}
 
 	var user models.User
 
 	database.DB.Where("id=?", id).First(&user)
-
-	return c.JSON(user)
+	return c.JSON(fiber.Map{
+		"status": true,
+		"data":   user,
+	})
 }
 func Logout(c *fiber.Ctx) error {
 
 	Authorization := c.Get("Authorization")
 
-	id, _ := util.ParseJwt(Authorization)
+	id, err := util.ParseJwt(Authorization)
+	if err != nil {
+
+		return c.JSON(fiber.Map{
+			"status":  false,
+			"message": "token doğrulanmadı",
+		})
+	}
 
 	database.DB.Model(&models.User{}).Where("id=? AND token=?", id, Authorization).Update("token", nil)
 
 	return c.JSON(fiber.Map{
-		"message": "success",
+		"status": true,
+		"data":   nil,
 	})
 }

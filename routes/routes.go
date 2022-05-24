@@ -16,7 +16,7 @@ func Setup(app *fiber.App) {
 	app.Post("/api/logout", controllers.Logout)
 	app.Get("/api/usercontacts/:id", controllers.GetUserContactById)
 	app.Post("/api/adduserContact", controllers.AddUserContact)
-	app.Get("/api/usercontact/:id", controllers.GetUserContact)
+	app.Get("/api/usercontacts", controllers.GetUserContact)
 	app.Put("/api/updateuserContact/:id", controllers.UpdateUserContact)
 	app.Delete("/api/deleteuserContact/:id", controllers.DeleteUserContact)
 }

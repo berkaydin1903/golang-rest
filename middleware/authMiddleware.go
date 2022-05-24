@@ -9,6 +9,7 @@ import (
 )
 
 func IsAuthenticated(c *fiber.Ctx) error {
+	c.Status(401)
 	Authorization := c.Get("Authorization")
 
 	id, _ := util.ParseJwt(Authorization)
@@ -19,6 +20,7 @@ func IsAuthenticated(c *fiber.Ctx) error {
 
 	if user.Token == "" {
 		return c.JSON(fiber.Map{
+			"status":  false,
 			"message": "unauthenticated",
 		})
 	}
